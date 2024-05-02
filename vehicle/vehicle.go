@@ -5,15 +5,35 @@ import (
 	"gomavlink/reader"
 )
 
+type Airframe int
+
+const (
+	FixedWing  Airframe = 1
+	Quadcopter Airframe = 2
+)
+
+func (a Airframe) String() string {
+	switch a {
+	case FixedWing:
+		return "FIXED WING"
+	case Quadcopter:
+		return "QUADCOPTER"
+	default:
+		return "UNKNOWN"
+	}
+
+}
+
 type Vehicle struct {
 	// TODO - Add fields to represent the vehicle's state
 	connection *reader.MavlinkReader
+	Airframe   Airframe
 }
 
 func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 	// TODO - Implement the vehicle's main loop
 	fmt.Println("New vehicle")
-	r, err := reader.NewMavlinkReader("127.0.0.1:14552", 115200, network)
+	r, err := reader.NewMavlinkReader(port, baud, network)
 	if err != nil {
 		fmt.Println("Error creating Vehicle: ", err)
 		return nil, err
