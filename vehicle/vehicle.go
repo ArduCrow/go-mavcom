@@ -28,6 +28,7 @@ type Vehicle struct {
 	// TODO - Add fields to represent the vehicle's state
 	connection *reader.MavlinkReader
 	Airframe   Airframe
+	// TODO - make the reader a field of the vehicle, make the reader update the vehicle's state as updated messages are received
 }
 
 func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
