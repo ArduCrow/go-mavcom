@@ -13,7 +13,7 @@ type Vehicle struct {
 func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 	// TODO - Implement the vehicle's main loop
 	fmt.Println("New vehicle")
-	r, err := reader.NewMavlinkReader("127.0.0.1:14551", 115200, network)
+	r, err := reader.NewMavlinkReader("127.0.0.1:14552", 115200, network)
 	if err != nil {
 		fmt.Println("Error creating Vehicle: ", err)
 		return nil, err

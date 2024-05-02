@@ -5,6 +5,8 @@ import (
 	"io"
 	"net"
 
+	"gomavlink/mavlink"
+
 	"github.com/tarm/serial"
 )
 
@@ -83,6 +85,22 @@ func (r *MavlinkReader) Start() {
 			fmt.Println("Error reading message: ", err)
 			break
 		}
-		fmt.Println("Received message: ", msg)
+		m, err := mavlink.NewRawMessage(msg)
+		if err != nil {
+			fmt.Println("Error getting message:", err)
+		}
+
+		if m.MessageID == 0 {
+			fmt.Println("Heartbeat received")
+			fmt.Printf("Length: %d, Sequence: %d, SysID: %d, CompID: %d, MessID: %d, Payload: %v, CRC: %d\n", m.Length, m.Sequence, m.SystemID, m.ComponentID, m.MessageID, m.Payload, m.CRC)
+
+			hbt, err := mavlink.NewHeartbeat(m.Payload)
+			if err != nil {
+				fmt.Println("Error decoding payload: ", err)
+			} else {
+				fmt.Printf("Type: %d, Autopilot: %d, BaseMode: %d, SystemStatus: %d\n", hbt.Type, hbt.Autopilot, hbt.BaseMode, hbt.SystemStatus)
+			}
+		}
+
 	}
 }
