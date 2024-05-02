@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gomavlink/reader"
+	"gomavlink/vehicle"
 )
 
 var useNetwork bool
@@ -14,11 +14,10 @@ func init() {
 }
 
 func main() {
-	r, err := reader.NewMavlinkReader("127.0.0.1:14551", 115200, useNetwork)
+	v, err := vehicle.NewVehicle("127.0.0.1:14551", 115200, useNetwork)
 	if err != nil {
-		fmt.Println("Error creating MavlinkReader: ", err)
+		fmt.Println("Error creating Vehicle: ", err)
 		return
 	}
-	defer r.Close()
-	r.Start()
+	v.Start()
 }

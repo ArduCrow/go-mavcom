@@ -40,7 +40,7 @@ func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReade
 }
 
 // Read a message from the serial port
-func (r *MavlinkReader) ReadMessage() ([]byte, error) {
+func (r *MavlinkReader) readMessage() ([]byte, error) {
 	var source io.Reader
 
 	if r.useNetwork {
@@ -70,9 +70,15 @@ func (r *MavlinkReader) Close() error {
 
 // Begin reading messages
 func (r *MavlinkReader) Start() {
-	fmt.Println("Starting MavlinkReader, listening on ")
+	var listenPort string
+	if r.useNetwork {
+		listenPort = r.conn.LocalAddr().String()
+	} else {
+		listenPort = fmt.Sprintf("%v", r.serialPort)
+	}
+	fmt.Printf("Starting MavlinkReader, listening on %v\n", listenPort)
 	for {
-		msg, err := r.ReadMessage()
+		msg, err := r.readMessage()
 		if err != nil {
 			fmt.Println("Error reading message: ", err)
 			break

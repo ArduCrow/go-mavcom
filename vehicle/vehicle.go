@@ -1,8 +1,29 @@
 package vehicle
 
-import "fmt"
+import (
+	"fmt"
+	"gomavlink/reader"
+)
 
-func Start() {
+type Vehicle struct {
+	// TODO - Add fields to represent the vehicle's state
+	connection *reader.MavlinkReader
+}
+
+func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 	// TODO - Implement the vehicle's main loop
-	fmt.Println("Starting vehicle")
+	fmt.Println("New vehicle")
+	r, err := reader.NewMavlinkReader("127.0.0.1:14551", 115200, network)
+	if err != nil {
+		fmt.Println("Error creating Vehicle: ", err)
+		return nil, err
+	}
+	defer r.Close()
+
+	return &Vehicle{connection: r}, nil
+}
+
+func (v *Vehicle) Start() {
+	fmt.Println("Starting Vehicle...")
+	v.connection.Start()
 }
