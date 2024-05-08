@@ -94,11 +94,13 @@ func (r *MavlinkReader) Start() {
 			fmt.Println("Heartbeat received")
 			fmt.Printf("Length: %d, Sequence: %d, SysID: %d, CompID: %d, MessID: %d, Payload: %v, CRC: %d\n", m.Length, m.Sequence, m.SystemID, m.ComponentID, m.MessageID, m.Payload, m.CRC)
 
-			hbt, err := mavlink.NewHeartbeat(m.Payload)
+			hbt, err := mavlink.DecodeMessage(m)
 			if err != nil {
 				fmt.Println("Error decoding payload: ", err)
 			} else {
-				fmt.Printf("Type: %d, Autopilot: %d, BaseMode: %d, SystemStatus: %d\n", hbt.Type, hbt.Autopilot, hbt.BaseMode, hbt.SystemStatus)
+				mData := hbt.MessageData()
+				fmt.Println(mData)
+				// fmt.Printf("Type: %d, Autopilot: %d, BaseMode: %d, SystemStatus: %d\n", hbt.Type, hbt.Autopilot, hbt.BaseMode, hbt.SystemStatus)
 			}
 		}
 
