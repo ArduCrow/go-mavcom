@@ -100,7 +100,7 @@ func (r *MavlinkReader) Start() {
 			} else {
 				mData := hbt.MessageData()
 				fmt.Println(mData)
-				// fmt.Printf("Type: %d, Autopilot: %d, BaseMode: %d, SystemStatus: %d\n", hbt.Type, hbt.Autopilot, hbt.BaseMode, hbt.SystemStatus)
+				fmt.Println(hbt.GetMessageName())
 			}
 		}
 
