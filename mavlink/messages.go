@@ -84,7 +84,7 @@ func decodeHeartbeat(data RawMessage) (DecodedMessage, error) {
 	newMessage := &HeartbeatMessage{
 		DecodedMavlinkMessage: DecodedMavlinkMessage{
 			MessageID:   data.MessageID,
-			MessageName: "HEARTBEAT",
+			MessageName: lookup(data.MessageID),
 			Payload: DecodedPayload{
 				"Type":         data.Payload[5],
 				"Autopilot":    data.Payload[6],
@@ -94,4 +94,14 @@ func decodeHeartbeat(data RawMessage) (DecodedMessage, error) {
 		},
 	}
 	return newMessage, nil
+}
+
+// placeholder function until message mapping is done
+func lookup(messageID int) string {
+	switch messageID {
+	case 0:
+		return "HEARTBEAT"
+	default:
+		return "UNKNOWN"
+	}
 }
