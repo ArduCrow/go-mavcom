@@ -100,7 +100,17 @@ func (r *MavlinkReader) Start() {
 			} else {
 				mData := hbt.MessageData()
 				fmt.Println(mData)
-				fmt.Println(hbt.GetMessageName())
+
+				// two ways to convert from uint8 to float64
+
+				// 1. using reflect
+				// valConv := float64(reflect.ValueOf(mData["SystemStatus"]).Uint())
+				// fmt.Println(reflect.TypeOf(valConv))
+
+				// 2. using type assertion
+				// val := mData["SystemStatus"]
+				// valConv := float64(val.(uint8))
+				// fmt.Println(valConv)
 			}
 		}
 
