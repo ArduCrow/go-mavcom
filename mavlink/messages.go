@@ -2,8 +2,16 @@ package mavlink
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"os"
 )
+
+type DecodedMessage interface {
+	GetMessageID() int
+	GetMessageName() string
+	MessageData() DecodedPayload
+}
 
 type RawMessage struct {
 	Length      uint8
@@ -15,13 +23,25 @@ type RawMessage struct {
 	CRC         uint8
 }
 
-type DecodedMavlinkMessage struct {
+type MavlinkMessage struct {
 	MessageID   int
 	MessageName string
 	Payload     DecodedPayload
 }
 
-type DecodedPayload map[interface{}]interface{}
+type DecodedPayload map[string]interface{}
+
+var MessagePayloadMap map[string][]string
+
+func init() {
+	messageData, err := os.ReadFile("./messages.json")
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(messageData, &MessagePayloadMap); err != nil {
+		panic(err)
+	}
+}
 
 func NewRawMessage(data []byte) (*RawMessage, error) {
 	if len(data) < 8 {
@@ -42,38 +62,69 @@ func NewRawMessage(data []byte) (*RawMessage, error) {
 	return newMessage, nil
 }
 
-func DecodeMessage(r *RawMessage) (*DecodedMavlinkMessage, error) {
-	switch r.MessageID {
+func DecodeMessage(data *RawMessage) (DecodedMessage, error) {
+	switch data.MessageID {
 	case 0:
-		return decodeHeartbeat(*r)
+		return decodeHeartbeat(data)
+	// case 33:
+	// 	return decodeGlobalPositionInt(data)
 	default:
-		return nil, fmt.Errorf("unknown message ID: %d", r.MessageID)
+		return nil, fmt.Errorf("unknown message ID: %d", data.MessageID)
 	}
 }
 
-func decodeHeartbeat(data RawMessage) (*DecodedMavlinkMessage, error) {
-	if len(data.Payload) != 9 {
-		return nil, fmt.Errorf("invalid payload length for Heartbeat message")
-	}
-	newMessage := &DecodedMavlinkMessage{
-		MessageID:   data.MessageID,
-		MessageName: lookup(data.MessageID),
-		Payload: DecodedPayload{
-			"Type":         data.Payload[5],
-			"Autopilot":    data.Payload[6],
-			"BaseMode":     data.Payload[7],
-			"SystemStatus": data.Payload[8],
-		},
-	}
-	return newMessage, nil
-}
-
-// placeholder function until message mapping is done
+// Placeholder function until message mapping is done
 func lookup(messageID int) string {
 	switch messageID {
 	case 0:
 		return "HEARTBEAT"
+	case 33:
+		return "GLOBAL_POSITION_INT"
 	default:
 		return "UNKNOWN"
+	}
+}
+
+func decodeHeartbeat(data *RawMessage) (*HeartbeatMessage, error) {
+	payload := data.Payload
+	if len(payload) != 9 {
+		return nil, fmt.Errorf("invalid payload length for HEARTBEAT message")
+	}
+	newMessage := &HeartbeatMessage{
+		MavlinkMessage: MavlinkMessage{
+			MessageID:   data.MessageID,
+			MessageName: lookup(data.MessageID),
+		},
+		Type:         data.Payload[5],
+		Autopilot:    data.Payload[6],
+		BaseMode:     data.Payload[7],
+		SystemStatus: data.Payload[8],
+	}
+	return newMessage, nil
+}
+
+type HeartbeatMessage struct {
+	MavlinkMessage
+	Type         uint8
+	Autopilot    uint8
+	BaseMode     uint8
+	SystemStatus uint8
+}
+
+func (h *HeartbeatMessage) GetMessageID() int {
+	return h.MessageID
+}
+
+func (h *HeartbeatMessage) GetMessageName() string {
+	return h.MessageName
+}
+
+// return all the fields of the message as a DecodedPayload
+func (h *HeartbeatMessage) MessageData() DecodedPayload {
+	return DecodedPayload{
+		"Type":         h.Type,
+		"Autopilot":    h.Autopilot,
+		"BaseMode":     h.BaseMode,
+		"SystemStatus": h.SystemStatus,
 	}
 }
