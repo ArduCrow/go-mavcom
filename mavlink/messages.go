@@ -2,9 +2,7 @@ package mavlink
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
-	"os"
 )
 
 type DecodedMessage interface {
@@ -31,18 +29,6 @@ type MavlinkMessage struct {
 
 type DecodedPayload map[string]interface{}
 
-var MessagePayloadMap map[string][]string
-
-func init() {
-	messageData, err := os.ReadFile("./messages.json")
-	if err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(messageData, &MessagePayloadMap); err != nil {
-		panic(err)
-	}
-}
-
 func NewRawMessage(data []byte) (*RawMessage, error) {
 	if len(data) < 8 {
 		return nil, fmt.Errorf("insufficient data for MAVLink message")
@@ -66,8 +52,8 @@ func DecodeMessage(data *RawMessage) (DecodedMessage, error) {
 	switch data.MessageID {
 	case 0:
 		return decodeHeartbeat(data)
-	// case 33:
-	// 	return decodeGlobalPositionInt(data)
+	case 33:
+		return decodeGlobalPositionInt(data)
 	default:
 		return nil, fmt.Errorf("unknown message ID: %d", data.MessageID)
 	}
@@ -126,5 +112,62 @@ func (h *HeartbeatMessage) MessageData() DecodedPayload {
 		"Autopilot":    h.Autopilot,
 		"BaseMode":     h.BaseMode,
 		"SystemStatus": h.SystemStatus,
+	}
+}
+
+func decodeGlobalPositionInt(data *RawMessage) (*GlobalPositionIntMessage, error) {
+	payload := data.Payload
+	if len(payload) != 28 {
+		return nil, fmt.Errorf("invalid payload length for GLOBAL_POSITION_INT message")
+	}
+	newMessage := &GlobalPositionIntMessage{
+		MessageID:   data.MessageID,
+		MessageName: lookup(data.MessageID),
+		TimeBootMs:  binary.LittleEndian.Uint32(payload[0:4]),
+		Lat:         int32(binary.LittleEndian.Uint32(payload[4:8])),
+		Lon:         int32(binary.LittleEndian.Uint32(payload[8:12])),
+		Alt:         int32(binary.LittleEndian.Uint32(payload[12:16])),
+		RelativeAlt: int32(binary.LittleEndian.Uint32(payload[16:20])),
+		Vx:          int16(binary.LittleEndian.Uint16(payload[20:22])),
+		Vy:          int16(binary.LittleEndian.Uint16(payload[22:24])),
+		Vz:          int16(binary.LittleEndian.Uint16(payload[24:26])),
+		Hdg:         binary.LittleEndian.Uint16(payload[26:28]),
+	}
+	return newMessage, nil
+}
+
+type GlobalPositionIntMessage struct {
+	MessageID   int
+	MessageName string
+	TimeBootMs  uint32
+	Lat         int32
+	Lon         int32
+	Alt         int32
+	RelativeAlt int32
+	Vx          int16
+	Vy          int16
+	Vz          int16
+	Hdg         uint16
+}
+
+func (g *GlobalPositionIntMessage) GetMessageID() int {
+	return g.MessageID
+}
+
+func (g *GlobalPositionIntMessage) GetMessageName() string {
+	return g.MessageName
+}
+
+func (g *GlobalPositionIntMessage) MessageData() DecodedPayload {
+	return DecodedPayload{
+		"TimeBootMs":  g.TimeBootMs,
+		"Lat":         g.Lat,
+		"Lon":         g.Lon,
+		"Alt":         g.Alt,
+		"RelativeAlt": g.RelativeAlt,
+		"Vx":          g.Vx,
+		"Vy":          g.Vy,
+		"Vz":          g.Vz,
+		"Hdg":         g.Hdg,
 	}
 }

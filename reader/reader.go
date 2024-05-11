@@ -98,7 +98,6 @@ func (r *MavlinkReader) Start() {
 			if err != nil {
 				fmt.Println("Error decoding payload: ", err)
 			} else {
-				// mData := hbt.Payload
 				fmt.Println(hbt.MessageData())
 
 				// two ways to convert from uint8 to float64
@@ -113,18 +112,14 @@ func (r *MavlinkReader) Start() {
 				// fmt.Println(valConv)
 			}
 		}
-		// if m.MessageID == 33 {
-		// 	// fmt.Println("Global Position received")
-		// 	// fmt.Printf("Length: %d, Sequence: %d, SysID: %d, CompID: %d, MessID: %d, Payload: %v, CRC: %d\n", m.Length, m.Sequence, m.SystemID, m.ComponentID, m.MessageID, m.Payload, m.CRC)
-
-		// 	pos, err := mavlink.DecodeMessage(m)
-		// 	if err != nil {
-		// 		fmt.Println("Error decoding payload: ", err)
-		// 	} else {
-		// 		mData := pos.Payload
-		// 		fmt.Println(mData)
-		// 	}
-		// }
+		if m.MessageID == 33 {
+			gpi, err := mavlink.DecodeMessage(m)
+			if err != nil {
+				fmt.Println("Error decoding payload: ", err)
+			} else {
+				fmt.Println(gpi.MessageData())
+			}
+		}
 
 	}
 }
