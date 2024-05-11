@@ -54,6 +54,8 @@ func DecodeMessage(data *RawMessage) (DecodedMessage, error) {
 		return decodeHeartbeat(data)
 	case 33:
 		return decodeGlobalPositionInt(data)
+	case 74:
+		return decodeVfrHud(data)
 	default:
 		return nil, fmt.Errorf("unknown message ID: %d", data.MessageID)
 	}
@@ -66,6 +68,8 @@ func lookup(messageID int) string {
 		return "HEARTBEAT"
 	case 33:
 		return "GLOBAL_POSITION_INT"
+	case 74:
+		return "VFR_HUD"
 	default:
 		return "UNKNOWN"
 	}
@@ -81,20 +85,20 @@ func decodeHeartbeat(data *RawMessage) (*HeartbeatMessage, error) {
 			MessageID:   data.MessageID,
 			MessageName: lookup(data.MessageID),
 		},
-		Type:         data.Payload[5],
-		Autopilot:    data.Payload[6],
-		BaseMode:     data.Payload[7],
-		SystemStatus: data.Payload[8],
+		Type:         float64(payload[5]),
+		Autopilot:    float64(payload[6]),
+		BaseMode:     float64(payload[7]),
+		SystemStatus: float64(payload[8]),
 	}
 	return newMessage, nil
 }
 
 type HeartbeatMessage struct {
 	MavlinkMessage
-	Type         uint8
-	Autopilot    uint8
-	BaseMode     uint8
-	SystemStatus uint8
+	Type         float64
+	Autopilot    float64
+	BaseMode     float64
+	SystemStatus float64
 }
 
 func (h *HeartbeatMessage) GetMessageID() int {
@@ -123,15 +127,15 @@ func decodeGlobalPositionInt(data *RawMessage) (*GlobalPositionIntMessage, error
 	newMessage := &GlobalPositionIntMessage{
 		MessageID:   data.MessageID,
 		MessageName: lookup(data.MessageID),
-		TimeBootMs:  binary.LittleEndian.Uint32(payload[0:4]),
-		Lat:         int32(binary.LittleEndian.Uint32(payload[4:8])),
-		Lon:         int32(binary.LittleEndian.Uint32(payload[8:12])),
-		Alt:         int32(binary.LittleEndian.Uint32(payload[12:16])),
-		RelativeAlt: int32(binary.LittleEndian.Uint32(payload[16:20])),
-		Vx:          int16(binary.LittleEndian.Uint16(payload[20:22])),
-		Vy:          int16(binary.LittleEndian.Uint16(payload[22:24])),
-		Vz:          int16(binary.LittleEndian.Uint16(payload[24:26])),
-		Hdg:         binary.LittleEndian.Uint16(payload[26:28]),
+		TimeBootMs:  float64(binary.LittleEndian.Uint32(payload[1:5])),
+		Lat:         float64(int32(binary.LittleEndian.Uint32(payload[5:9]))) / 10000000,
+		Lon:         float64(int32(binary.LittleEndian.Uint32(payload[9:13]))) / 10000000,
+		Alt:         float64(int32(binary.LittleEndian.Uint32(payload[13:17]))) / 1000,
+		RelativeAlt: float64(int32(binary.LittleEndian.Uint32(payload[17:21]))) / 1000,
+		Vx:          float64(int16(binary.LittleEndian.Uint16(payload[21:23]))) / 100,
+		Vy:          float64(int16(binary.LittleEndian.Uint16(payload[23:25]))) / 100,
+		Vz:          float64(int16(binary.LittleEndian.Uint16(payload[25:27]))) / 100,
+		Hdg:         float64(binary.LittleEndian.Uint16(payload[27:29])) / 100,
 	}
 	return newMessage, nil
 }
@@ -139,15 +143,15 @@ func decodeGlobalPositionInt(data *RawMessage) (*GlobalPositionIntMessage, error
 type GlobalPositionIntMessage struct {
 	MessageID   int
 	MessageName string
-	TimeBootMs  uint32
-	Lat         int32
-	Lon         int32
-	Alt         int32
-	RelativeAlt int32
-	Vx          int16
-	Vy          int16
-	Vz          int16
-	Hdg         uint16
+	TimeBootMs  float64
+	Lat         float64
+	Lon         float64
+	Alt         float64
+	RelativeAlt float64
+	Vx          float64
+	Vy          float64
+	Vz          float64
+	Hdg         float64
 }
 
 func (g *GlobalPositionIntMessage) GetMessageID() int {
@@ -169,5 +173,53 @@ func (g *GlobalPositionIntMessage) MessageData() DecodedPayload {
 		"Vy":          g.Vy,
 		"Vz":          g.Vz,
 		"Hdg":         g.Hdg,
+	}
+}
+
+func decodeVfrHud(data *RawMessage) (*VfrHudMessage, error) {
+	payload := data.Payload
+	if len(payload) != 18 {
+		return nil, fmt.Errorf("invalid payload length for VFR_HUD message")
+	}
+	newMessage := &VfrHudMessage{
+		MessageID:   data.MessageID,
+		MessageName: lookup(data.MessageID),
+		Airspeed:    float64(binary.LittleEndian.Uint16(payload[0:2])),
+		Groundspeed: float64(binary.LittleEndian.Uint16(payload[2:4])),
+		Heading:     float64(int16(binary.LittleEndian.Uint16(payload[4:6]))),
+		Throttle:    float64(int16(binary.LittleEndian.Uint16(payload[6:8]))),
+		Alt:         float64(binary.LittleEndian.Uint16(payload[8:10])),
+		Climb:       float64(binary.LittleEndian.Uint16(payload[10:12])),
+	}
+	return newMessage, nil
+}
+
+type VfrHudMessage struct {
+	MessageID   int
+	MessageName string
+	Airspeed    float64
+	Groundspeed float64
+	Heading     float64
+	Throttle    float64
+	Alt         float64
+	Climb       float64
+}
+
+func (v *VfrHudMessage) GetMessageID() int {
+	return v.MessageID
+}
+
+func (v *VfrHudMessage) GetMessageName() string {
+	return v.MessageName
+}
+
+func (v *VfrHudMessage) MessageData() DecodedPayload {
+	return DecodedPayload{
+		"Airspeed":    v.Airspeed,
+		"Groundspeed": v.Groundspeed,
+		"Alt":         v.Alt,
+		"Clb":         v.Climb,
+		"Heading":     v.Heading,
+		"Throttle":    v.Throttle,
 	}
 }
