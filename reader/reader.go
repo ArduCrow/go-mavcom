@@ -98,7 +98,7 @@ func (r *MavlinkReader) Start() {
 			if err != nil {
 				fmt.Println("Error decoding payload: ", err)
 			} else {
-				mData := hbt.MessageData()
+				mData := hbt.Payload
 				fmt.Println(mData)
 
 				// two ways to convert from uint8 to float64

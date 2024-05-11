@@ -15,12 +15,6 @@ type RawMessage struct {
 	CRC         uint8
 }
 
-type DecodedMessage interface {
-	GetMessageID() int
-	GetMessageName() string
-	MessageData() DecodedPayload
-}
-
 type DecodedMavlinkMessage struct {
 	MessageID   int
 	MessageName string
@@ -48,7 +42,7 @@ func NewRawMessage(data []byte) (*RawMessage, error) {
 	return newMessage, nil
 }
 
-func DecodeMessage(r *RawMessage) (DecodedMessage, error) {
+func DecodeMessage(r *RawMessage) (*DecodedMavlinkMessage, error) {
 	switch r.MessageID {
 	case 0:
 		return decodeHeartbeat(*r)
@@ -57,40 +51,18 @@ func DecodeMessage(r *RawMessage) (DecodedMessage, error) {
 	}
 }
 
-type HeartbeatMessage struct {
-	DecodedMavlinkMessage
-	Type         uint8
-	Autopilot    uint8
-	BaseMode     uint8
-	SystemStatus uint8
-}
-
-func (h *HeartbeatMessage) GetMessageID() int {
-	return h.MessageID
-}
-
-func (h *HeartbeatMessage) GetMessageName() string {
-	return h.MessageName
-}
-
-func (h *HeartbeatMessage) MessageData() DecodedPayload {
-	return h.Payload
-}
-
-func decodeHeartbeat(data RawMessage) (DecodedMessage, error) {
+func decodeHeartbeat(data RawMessage) (*DecodedMavlinkMessage, error) {
 	if len(data.Payload) != 9 {
 		return nil, fmt.Errorf("invalid payload length for Heartbeat message")
 	}
-	newMessage := &HeartbeatMessage{
-		DecodedMavlinkMessage: DecodedMavlinkMessage{
-			MessageID:   data.MessageID,
-			MessageName: lookup(data.MessageID),
-			Payload: DecodedPayload{
-				"Type":         data.Payload[5],
-				"Autopilot":    data.Payload[6],
-				"BaseMode":     data.Payload[7],
-				"SystemStatus": data.Payload[8],
-			},
+	newMessage := &DecodedMavlinkMessage{
+		MessageID:   data.MessageID,
+		MessageName: lookup(data.MessageID),
+		Payload: DecodedPayload{
+			"Type":         data.Payload[5],
+			"Autopilot":    data.Payload[6],
+			"BaseMode":     data.Payload[7],
+			"SystemStatus": data.Payload[8],
 		},
 	}
 	return newMessage, nil
