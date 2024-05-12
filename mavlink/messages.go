@@ -61,20 +61,6 @@ func DecodeMessage(data *RawMessage) (DecodedMessage, error) {
 	}
 }
 
-// Placeholder function until message mapping is done
-func lookup(messageID int) string {
-	switch messageID {
-	case 0:
-		return "HEARTBEAT"
-	case 33:
-		return "GLOBAL_POSITION_INT"
-	case 74:
-		return "VFR_HUD"
-	default:
-		return "UNKNOWN"
-	}
-}
-
 func decodeHeartbeat(data *RawMessage) (*HeartbeatMessage, error) {
 	payload := data.Payload
 	if len(payload) != 9 {
@@ -83,7 +69,7 @@ func decodeHeartbeat(data *RawMessage) (*HeartbeatMessage, error) {
 	newMessage := &HeartbeatMessage{
 		MavlinkMessage: MavlinkMessage{
 			MessageID:   data.MessageID,
-			MessageName: lookup(data.MessageID),
+			MessageName: "HEARTBEAT",
 		},
 		Type:         float64(payload[5]),
 		Autopilot:    float64(payload[6]),
@@ -126,7 +112,7 @@ func decodeGlobalPositionInt(data *RawMessage) (*GlobalPositionIntMessage, error
 	}
 	newMessage := &GlobalPositionIntMessage{
 		MessageID:   data.MessageID,
-		MessageName: lookup(data.MessageID),
+		MessageName: "GLOBAL_POSITION_INT",
 		TimeBootMs:  float64(binary.LittleEndian.Uint32(payload[1:5])),
 		Lat:         float64(int32(binary.LittleEndian.Uint32(payload[5:9]))) / 10000000,
 		Lon:         float64(int32(binary.LittleEndian.Uint32(payload[9:13]))) / 10000000,
@@ -183,7 +169,7 @@ func decodeVfrHud(data *RawMessage) (*VfrHudMessage, error) {
 	}
 	newMessage := &VfrHudMessage{
 		MessageID:   data.MessageID,
-		MessageName: lookup(data.MessageID),
+		MessageName: "VFR_HUD",
 		Airspeed:    float64(binary.LittleEndian.Uint16(payload[0:2])),
 		Groundspeed: float64(binary.LittleEndian.Uint16(payload[2:4])),
 		Heading:     float64(int16(binary.LittleEndian.Uint16(payload[4:6]))),
