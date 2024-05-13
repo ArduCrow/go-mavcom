@@ -3,6 +3,7 @@ package mavlink
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 type DecodedMessage interface {
@@ -164,18 +165,16 @@ func (g *GlobalPositionIntMessage) MessageData() DecodedPayload {
 
 func decodeVfrHud(data *RawMessage) (*VfrHudMessage, error) {
 	payload := data.Payload
-	if len(payload) != 18 {
-		return nil, fmt.Errorf("invalid payload length for VFR_HUD message")
-	}
+
 	newMessage := &VfrHudMessage{
 		MessageID:   data.MessageID,
 		MessageName: "VFR_HUD",
-		Airspeed:    float64(binary.LittleEndian.Uint16(payload[0:2])),
-		Groundspeed: float64(binary.LittleEndian.Uint16(payload[2:4])),
-		Heading:     float64(int16(binary.LittleEndian.Uint16(payload[4:6]))),
-		Throttle:    float64(int16(binary.LittleEndian.Uint16(payload[6:8]))),
-		Alt:         float64(binary.LittleEndian.Uint16(payload[8:10])),
-		Climb:       float64(binary.LittleEndian.Uint16(payload[10:12])),
+		Airspeed:    float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[1:5]))),
+		Groundspeed: float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[5:9]))),
+		Throttle:    float64(uint16(binary.LittleEndian.Uint16(payload[9:11]))),
+		Alt:         float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[11:17]))),
+		Climb:       float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[13:17]))),
+		Heading:     float64(uint16(binary.LittleEndian.Uint16(payload[17:19]))),
 	}
 	return newMessage, nil
 }
