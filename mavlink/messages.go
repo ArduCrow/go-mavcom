@@ -171,10 +171,11 @@ func decodeVfrHud(data *RawMessage) (*VfrHudMessage, error) {
 		MessageName: "VFR_HUD",
 		Airspeed:    float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[1:5]))),
 		Groundspeed: float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[5:9]))),
-		Throttle:    float64(uint16(binary.LittleEndian.Uint16(payload[9:11]))),
-		Alt:         float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[11:17]))),
-		Climb:       float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[13:17]))),
-		Heading:     float64(uint16(binary.LittleEndian.Uint16(payload[17:19]))),
+		// Throttle:    float64(uint16(binary.LittleEndian.Uint16(payload[9:11]))),
+		Alt:      float64(uint16(binary.LittleEndian.Uint32(payload[9:13]))),
+		Throttle: float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[11:17]))),
+		Climb:    float64(math.Float32frombits(binary.LittleEndian.Uint32(payload[13:17]))),
+		Heading:  float64(uint16(binary.LittleEndian.Uint16(payload[17:19]))),
 	}
 	return newMessage, nil
 }

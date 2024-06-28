@@ -126,6 +126,7 @@ func (r *MavlinkReader) Start() {
 		// }
 		if m.MessageID == 74 {
 			fmt.Println(m)
+			fmt.Printf("%02X\n", m)
 			gpi, err := mavlink.DecodeMessage(m)
 			if err != nil {
 				fmt.Println("Error decoding payload: ", err)
