@@ -89,3 +89,59 @@ func decodeHeartbeat(data RawMessage) (DecodedMessage, error) {
 	}
 	return newMessage, nil
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		// if m.MessageID == 0 {
+		// 	fmt.Println("Heartbeat received")
+		// 	// fmt.Printf("Length: %d, Sequence: %d, SysID: %d, CompID: %d, MessID: %d, Payload: %v, CRC: %d\n", m.Length, m.Sequence, m.SystemID, m.ComponentID, m.MessageID, m.Payload, m.CRC)
+
+		// 	hbt, err := mavlink.DecodeMessage(m)
+		// 	if err != nil {
+		// 		fmt.Println("Error decoding payload: ", err)
+		// 	} else {
+		// 		fmt.Println(hbt.MessageData())
+
+		// 		// two ways to convert from uint8 to float64
+
+		// 		// 1. using reflect
+		// 		// valConv := float64(reflect.ValueOf(mData["SystemStatus"]).Uint())
+		// 		// fmt.Println(reflect.TypeOf(valConv))
+
+		// 		// 2. using type assertion
+		// 		// val := mData["SystemStatus"]
+		// 		// valConv := float64(val.(uint8))
+		// 		// fmt.Println(valConv)
+		// 	}
+		// }

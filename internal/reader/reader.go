@@ -11,9 +11,17 @@ import (
 )
 
 type MavlinkReader struct {
-	serialPort *serial.Port
-	conn       net.Conn
-	useNetwork bool
+	serialPort    *serial.Port
+	listenPort    string
+	conn          net.Conn
+	useNetwork    bool
+	msgChan       chan mavlink.DecodedMessage
+	CurrentValues CurrentValues
+}
+
+type CurrentValues struct {
+	GlobalPositionIntState mavlink.DecodedPayload
+	VFRHUDState            mavlink.DecodedPayload
 }
 
 func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReader, error) {
@@ -37,7 +45,7 @@ func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReade
 		}
 	}
 
-	return &MavlinkReader{serialPort: port, conn: conn, useNetwork: useNetwork}, nil
+	return &MavlinkReader{serialPort: port, conn: conn, useNetwork: useNetwork, msgChan: make(chan mavlink.DecodedMessage)}, nil
 }
 
 func (r *MavlinkReader) readMessage() ([]byte, error) {
@@ -70,13 +78,12 @@ func (r *MavlinkReader) Close() error {
 
 // Begin reading messages
 func (r *MavlinkReader) Start() {
-	var listenPort string
 	if r.useNetwork {
-		listenPort = r.conn.LocalAddr().String()
+		r.listenPort = r.conn.LocalAddr().String()
 	} else {
-		listenPort = fmt.Sprintf("%v", r.serialPort)
+		r.listenPort = fmt.Sprintf("%v", r.serialPort)
 	}
-	fmt.Printf("Starting MavlinkReader, listening on %v\n", listenPort)
+	fmt.Printf("Starting MavlinkReader, listening on %v\n", r.listenPort)
 	for {
 		msg, err := r.readMessage()
 		if err != nil {
@@ -92,41 +99,22 @@ func (r *MavlinkReader) Start() {
 			fmt.Println("Heartbeat received")
 		}
 
-		// VFR HUD MESSAGE - 74
-		// GLOBAL POSITION INT - 33
-		// HEARTBEAT - 0
-		// if m.MessageID == 33 {
-		// 	msg, err := mavlink.DecodeMessage(m)
-		// 	if err != nil {
-		// 		fmt.Println("Error decoding payload: ", err)
-		// 	} else {
-		// 		fmt.Println(msg.GetMessageName())
-		// 		fmt.Println(msg.MessageData())
-		// 	}
-		// }
+		// if the message ID is not 0, 33 or 74 then ignore it
+		if m.MessageID != 0 && m.MessageID != 33 && m.MessageID != 74 {
+			continue
+		}
+		decodedMessage, err := mavlink.DecodeMessage(m)
+		if err != nil {
+			fmt.Println("Error decoding message: ", err)
+		}
+		fmt.Println(decodedMessage.GetMessageName())
 
-		// if m.MessageID == 0 {
-		// 	fmt.Println("Heartbeat received")
-		// 	// fmt.Printf("Length: %d, Sequence: %d, SysID: %d, CompID: %d, MessID: %d, Payload: %v, CRC: %d\n", m.Length, m.Sequence, m.SystemID, m.ComponentID, m.MessageID, m.Payload, m.CRC)
-
-		// 	hbt, err := mavlink.DecodeMessage(m)
-		// 	if err != nil {
-		// 		fmt.Println("Error decoding payload: ", err)
-		// 	} else {
-		// 		fmt.Println(hbt.MessageData())
-
-		// 		// two ways to convert from uint8 to float64
-
-		// 		// 1. using reflect
-		// 		// valConv := float64(reflect.ValueOf(mData["SystemStatus"]).Uint())
-		// 		// fmt.Println(reflect.TypeOf(valConv))
-
-		// 		// 2. using type assertion
-		// 		// val := mData["SystemStatus"]
-		// 		// valConv := float64(val.(uint8))
-		// 		// fmt.Println(valConv)
-		// 	}
-		// }
+		r.msgChan <- decodedMessage
 
 	}
+}
+
+// This function should return a channel that will be used to send messages
+func (r *MavlinkReader) Messages() <-chan mavlink.DecodedMessage {
+	return r.msgChan
 }
