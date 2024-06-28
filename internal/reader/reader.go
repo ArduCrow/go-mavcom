@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 
-	"gomavlink/mavlink"
+	"gomavlink/internal/mavlink"
 
 	"github.com/tarm/serial"
 )
@@ -87,20 +87,25 @@ func (r *MavlinkReader) Start() {
 		}
 		m, err := mavlink.NewRawMessage(msg)
 		if err != nil {
-			fmt.Println("Error getting message:", err)
+			fmt.Println("Error parsing message:", err)
 		}
 
 		if m.MessageID == 0 {
 			fmt.Println("Heartbeat received")
 		}
-		if m.MessageID == 74 {
-			gpi, err := mavlink.DecodeMessage(m)
-			if err != nil {
-				fmt.Println("Error decoding payload: ", err)
-			} else {
-				fmt.Println(gpi.GetMessageName())
-			}
-		}
+
+		// VFR HUD MESSAGE - 74
+		// GLOBAL POSITION INT - 33
+		// HEARTBEAT - 0
+		// if m.MessageID == 33 {
+		// 	msg, err := mavlink.DecodeMessage(m)
+		// 	if err != nil {
+		// 		fmt.Println("Error decoding payload: ", err)
+		// 	} else {
+		// 		fmt.Println(msg.GetMessageName())
+		// 		fmt.Println(msg.MessageData())
+		// 	}
+		// }
 
 		// if m.MessageID == 0 {
 		// 	fmt.Println("Heartbeat received")
@@ -122,34 +127,6 @@ func (r *MavlinkReader) Start() {
 		// 		// val := mData["SystemStatus"]
 		// 		// valConv := float64(val.(uint8))
 		// 		// fmt.Println(valConv)
-		// 	}
-		// }
-		if m.MessageID == 74 {
-			fmt.Println(m)
-			fmt.Printf("%02X\n", m)
-			gpi, err := mavlink.DecodeMessage(m)
-			if err != nil {
-				fmt.Println("Error decoding payload: ", err)
-			} else {
-				// fmt.Printf("Length: %d, Sequence: %d, SysID: %d, CompID: %d, MessID: %d, Payload: %v, CRC: %d\n", m.Length, m.Sequence, m.SystemID, m.ComponentID, m.MessageID, m.Payload, m.CRC)
-				fmt.Println(gpi.MessageData())
-				// mData := gpi.MessageData()
-				// fmt.Println("Decoded VFR_HUD message:")
-				// fmt.Printf("Airspeed: %.2f m/s\n", mData["Airspeed"])
-				// fmt.Printf("Groundspeed: %.2f m/s\n", mData["Groundspeed"])
-				// fmt.Printf("Heading: %.2f degrees\n", mData["Heading"])
-				// fmt.Printf("Throttle: %.2f %%\n", mData["Throttle"])
-				// fmt.Printf("Altitude: %.2f m\n", mData["Altitude"])
-				// fmt.Printf("Climb: %.2f m/s\n", mData["Climb"])
-			}
-		}
-		// if m.MessageID == 33 {
-		// 	gpi, err := mavlink.DecodeMessage(m)
-		// 	if err != nil {
-		// 		fmt.Println("Error decoding payload: ", err)
-		// 	} else {
-		// 		fmt.Printf("Length: %d, Sequence: %d, SysID: %d, CompID: %d, MessID: %d, Payload: %v, CRC: %d\n", m.Length, m.Sequence, m.SystemID, m.ComponentID, m.MessageID, m.Payload, m.CRC)
-		// 		fmt.Println(gpi.MessageData())
 		// 	}
 		// }
 

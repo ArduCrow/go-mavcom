@@ -2,7 +2,7 @@ package vehicle
 
 import (
 	"fmt"
-	"gomavlink/reader"
+	"gomavlink/internal/reader"
 )
 
 type Airframe int
@@ -47,4 +47,8 @@ func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 func (v *Vehicle) Start() {
 	fmt.Println("Starting Vehicle...")
 	v.connection.Start()
+}
+
+func (v *Vehicle) Travel(lat float64, lon float64, alt int) {
+	fmt.Printf("PLACEHOLDER. Vehicle travel to to %v, %v\n", lat, lon)
 }
