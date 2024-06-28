@@ -16,7 +16,6 @@ type MavlinkReader struct {
 	useNetwork bool
 }
 
-// Create a new MavlinkReader
 func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReader, error) {
 	var port *serial.Port
 	var conn net.Conn
@@ -41,7 +40,6 @@ func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReade
 	return &MavlinkReader{serialPort: port, conn: conn, useNetwork: useNetwork}, nil
 }
 
-// Read a message from the serial port
 func (r *MavlinkReader) readMessage() ([]byte, error) {
 	var source io.Reader
 
