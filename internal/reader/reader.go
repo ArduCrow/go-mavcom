@@ -107,7 +107,7 @@ func (r *MavlinkReader) Start() {
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 		}
-		fmt.Println(decodedMessage.GetMessageName())
+		// fmt.Println(decodedMessage.GetMessageName())
 
 		r.msgChan <- decodedMessage
 

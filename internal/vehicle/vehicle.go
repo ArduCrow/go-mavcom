@@ -35,6 +35,7 @@ type Position struct {
 	Longitude        float64
 	AltitudeRelative float64
 	AltitudeAMSL     float64
+	Heading          float64
 }
 
 type Vehicle struct {
@@ -64,8 +65,6 @@ func (v *Vehicle) Start() {
 
 	go func() {
 		for msg := range v.connection.Messages() {
-			// m := <-v.connection.Messages()
-			fmt.Println("Message received: ", msg.MessageData())
 			v.updateStates(msg)
 		}
 	}()
@@ -91,7 +90,7 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 		v.connection.CurrentStates.GlobalPositionIntState = msg.MessageData()
 	case 74:
 		// VFR_HUD
-		fmt.Println("VFRHUD received!")
+		v.connection.CurrentStates.VFRHUDState = msg.MessageData()
 	default:
 		fmt.Println("Unknown message ID: ", msg.GetMessageID())
 	}
@@ -102,8 +101,9 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 		v.connection.CurrentStates.GlobalPositionIntState["Lon"].(float64),
 		v.connection.CurrentStates.GlobalPositionIntState["RelativeAlt"].(float64),
 		v.connection.CurrentStates.GlobalPositionIntState["Alt"].(float64),
+		v.connection.CurrentStates.GlobalPositionIntState["Hdg"].(float64),
 	)
-	fmt.Println("Vehicle state updated: ", v.Position)
+	fmt.Println("Position state update: ", v.Position)
 }
 
 // func (v *Vehicle) updateBatteryState(voltage float64, current float64) {
@@ -113,11 +113,12 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 // 	}
 // }
 
-func (v *Vehicle) updatePosition(lat float64, lon float64, altRel float64, altAMSL float64) {
+func (v *Vehicle) updatePosition(lat float64, lon float64, altRel float64, altAMSL float64, heading float64) {
 	v.Position = Position{
 		Latitude:         lat,
 		Longitude:        lon,
 		AltitudeRelative: altRel,
 		AltitudeAMSL:     altAMSL,
+		Heading:          heading,
 	}
 }
