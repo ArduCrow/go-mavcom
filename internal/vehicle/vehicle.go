@@ -25,7 +25,7 @@ func (a Airframe) String() string {
 
 }
 
-type BatteryState struct {
+type Battery struct {
 	Voltage float64
 	Current float64
 }
@@ -40,10 +40,10 @@ type Position struct {
 
 type Vehicle struct {
 	// TODO - Add fields to represent the vehicle's state
-	connection   *reader.MavlinkReader
-	Airframe     Airframe
-	BatteryState BatteryState
-	Position     Position
+	connection *reader.MavlinkReader
+	Airframe   Airframe
+	Battery    Battery
+	Position   Position
 	// TODO - make the reader a field of the vehicle, make the reader update the vehicle's state as updated messages are received
 }
 
@@ -107,7 +107,7 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 }
 
 // func (v *Vehicle) updateBatteryState(voltage float64, current float64) {
-// 	v.BatteryState = BatteryState{
+// 	v.Battery = Battery{
 // 		Voltage: voltage,
 // 		Current: current,
 // 	}
