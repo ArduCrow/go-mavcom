@@ -16,10 +16,10 @@ type MavlinkReader struct {
 	conn          net.Conn
 	useNetwork    bool
 	msgChan       chan mavlink.DecodedMessage
-	CurrentValues CurrentValues
+	CurrentStates CurrentStates
 }
 
-type CurrentValues struct {
+type CurrentStates struct {
 	GlobalPositionIntState mavlink.DecodedPayload
 	VFRHUDState            mavlink.DecodedPayload
 }

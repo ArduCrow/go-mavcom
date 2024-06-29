@@ -88,7 +88,7 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 		fmt.Println("Airframe: ", v.Airframe.String())
 	case 33:
 		// GlobalPositionInt
-		v.connection.CurrentValues.GlobalPositionIntState = msg.MessageData()
+		v.connection.CurrentStates.GlobalPositionIntState = msg.MessageData()
 	case 74:
 		// VFR_HUD
 		fmt.Println("VFRHUD received!")
@@ -98,10 +98,10 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 
 	// v.updateBatteryState(latestVFRHUDMessageData["BatteryVoltage"].(float64), latestVFRHUDMessageData["BatteryCurrent"].(float64))
 	v.updatePosition(
-		v.connection.CurrentValues.GlobalPositionIntState["Lat"].(float64),
-		v.connection.CurrentValues.GlobalPositionIntState["Lon"].(float64),
-		v.connection.CurrentValues.GlobalPositionIntState["RelativeAlt"].(float64),
-		v.connection.CurrentValues.GlobalPositionIntState["Alt"].(float64),
+		v.connection.CurrentStates.GlobalPositionIntState["Lat"].(float64),
+		v.connection.CurrentStates.GlobalPositionIntState["Lon"].(float64),
+		v.connection.CurrentStates.GlobalPositionIntState["RelativeAlt"].(float64),
+		v.connection.CurrentStates.GlobalPositionIntState["Alt"].(float64),
 	)
 	fmt.Println("Vehicle state updated: ", v.Position)
 }
