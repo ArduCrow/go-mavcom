@@ -84,34 +84,37 @@ func (r *MavlinkReader) Start() {
 		r.listenPort = fmt.Sprintf("%v", r.serialPort)
 	}
 	fmt.Printf("Starting MavlinkReader, listening on %v\n", r.listenPort)
-	for {
-		msg, err := r.readMessage()
-		if err != nil {
-			fmt.Println("Error reading message: ", err)
-			break
-		}
-		m, err := mavlink.NewRawMessage(msg)
-		if err != nil {
-			fmt.Println("Error parsing message:", err)
-		}
+	go func() {
+		for {
+			msg, err := r.readMessage()
+			if err != nil {
+				fmt.Println("Error reading message: ", err)
+				break
+			}
+			m, err := mavlink.NewRawMessage(msg)
+			if err != nil {
+				fmt.Println("Error parsing message:", err)
+			}
 
-		if m.MessageID == 0 {
-			fmt.Println("Heartbeat received")
-		}
+			if m.MessageID == 0 {
+				fmt.Println("Heartbeat received")
+			}
 
-		// if the message ID is not 0, 33 or 74 then ignore it
-		if m.MessageID != 0 && m.MessageID != 33 && m.MessageID != 74 {
-			continue
-		}
-		decodedMessage, err := mavlink.DecodeMessage(m)
-		if err != nil {
-			fmt.Println("Error decoding message: ", err)
-		}
-		// fmt.Println(decodedMessage.GetMessageName())
+			// if the message ID is not 0, 33 or 74 then ignore it
+			if m.MessageID != 0 && m.MessageID != 33 && m.MessageID != 74 {
+				continue
+			}
+			decodedMessage, err := mavlink.DecodeMessage(m)
+			if err != nil {
+				fmt.Println("Error decoding message: ", err)
+			}
+			// fmt.Println(decodedMessage.GetMessageName())
 
-		r.msgChan <- decodedMessage
+			r.msgChan <- decodedMessage
 
-	}
+		}
+	}()
+
 }
 
 // This function should return a channel that will be used to send messages
