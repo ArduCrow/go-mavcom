@@ -60,6 +60,10 @@ func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 	return &Vehicle{connection: r}, nil
 }
 
+// Begins the vehicles main loop
+// Spawns a goroutine to listen for messages from the connection
+// since reading from a channel is blocking
+// Starts the mavlink connection once this goroutine is running
 func (v *Vehicle) Start() {
 	fmt.Println("Starting Vehicle...")
 

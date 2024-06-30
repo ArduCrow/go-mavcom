@@ -76,7 +76,9 @@ func (r *MavlinkReader) Close() error {
 	return nil
 }
 
-// Begin reading messages
+// Begin reading messages. Spawns its own goroutine so that the
+// main loop can continue to run (the Read method in the readMessage
+// function is blocking)
 func (r *MavlinkReader) Start() {
 	if r.useNetwork {
 		r.listenPort = r.conn.LocalAddr().String()
