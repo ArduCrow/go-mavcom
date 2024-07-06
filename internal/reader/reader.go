@@ -13,7 +13,7 @@ import (
 type MavlinkReader struct {
 	serialPort    *serial.Port
 	listenPort    string
-	conn          net.Conn
+	Conn          net.Conn
 	useNetwork    bool
 	msgChan       chan mavlink.DecodedMessage
 	CurrentStates CurrentStates
@@ -45,14 +45,14 @@ func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReade
 		}
 	}
 
-	return &MavlinkReader{serialPort: port, conn: conn, useNetwork: useNetwork, msgChan: make(chan mavlink.DecodedMessage)}, nil
+	return &MavlinkReader{serialPort: port, Conn: conn, useNetwork: useNetwork, msgChan: make(chan mavlink.DecodedMessage)}, nil
 }
 
 func (r *MavlinkReader) readMessage() ([]byte, error) {
 	var source io.Reader
 
 	if r.useNetwork {
-		source = r.conn
+		source = r.Conn
 	} else {
 		source = r.serialPort
 	}
@@ -81,7 +81,7 @@ func (r *MavlinkReader) Close() error {
 // function is blocking)
 func (r *MavlinkReader) Start() {
 	if r.useNetwork {
-		r.listenPort = r.conn.LocalAddr().String()
+		r.listenPort = r.Conn.LocalAddr().String()
 	} else {
 		r.listenPort = fmt.Sprintf("%v", r.serialPort)
 	}

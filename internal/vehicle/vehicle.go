@@ -105,7 +105,7 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 
 	if v.connected && v.connection.CurrentStates.GlobalPositionIntState != nil {
 		v.updatePosition()
-		mavlink.SendMessage(msg, v.connection.conn)
+		mavlink.SendMessage(msg, v.connection.Conn)
 	}
 }
 
