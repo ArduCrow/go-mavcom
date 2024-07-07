@@ -2,8 +2,8 @@ package vehicle
 
 import (
 	"fmt"
-	"gomavlink/pkg/mavlink"
-	"gomavlink/pkg/reader"
+	"gomavlink/internal/mavlink"
+	"gomavlink/internal/reader"
 	"sync"
 )
 
