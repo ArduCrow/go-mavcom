@@ -2,8 +2,8 @@ package vehicle
 
 import (
 	"fmt"
-	"gomavlink/internal/mavlink"
-	"gomavlink/internal/reader"
+	"gomavlink/pkg/mavlink"
+	"gomavlink/pkg/reader"
 	"sync"
 )
 
@@ -73,6 +73,8 @@ func (v *Vehicle) Start() {
 		}
 	}()
 	v.connection.Start()
+
+	// select {}
 
 }
 

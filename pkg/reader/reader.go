@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 
-	"gomavlink/internal/mavlink"
+	"gomavlink/pkg/mavlink"
 
 	"github.com/tarm/serial"
 )

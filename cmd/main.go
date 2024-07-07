@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gomavlink/internal/vehicle"
+	"gomavlink/pkg/vehicle"
 )
 
 var useNetwork bool
