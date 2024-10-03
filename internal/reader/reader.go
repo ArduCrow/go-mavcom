@@ -1,6 +1,8 @@
 package reader
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
@@ -73,6 +75,69 @@ func (r *MavlinkReader) readMessage() ([]byte, error) {
 	return buf[:n], nil
 }
 
+func createMessage(messageID uint8, systemID uint8, componentID uint8, payload []byte) ([]byte, error) {
+	msgLength := len(payload)
+
+	// Create a buffer to store the message
+	msg := bytes.NewBuffer([]byte{})
+
+	// Write the MAVLink header (assuming MAVLink 1.0 for simplicity)
+	msg.WriteByte(0xFE)             // Start byte
+	msg.WriteByte(uint8(msgLength)) // Payload length
+	msg.WriteByte(0)                // Packet sequence (dummy value for now)
+	msg.WriteByte(systemID)         // System ID
+	msg.WriteByte(componentID)      // Component ID
+	msg.WriteByte(messageID)        // Message ID
+
+	// Write the payload
+	msg.Write(payload)
+
+	// Calculate and append the checksum (simple XOR for demonstration)
+	checksum := uint8(0)
+	for _, b := range msg.Bytes() {
+		checksum ^= b
+	}
+	msg.WriteByte(checksum)
+
+	return msg.Bytes(), nil
+}
+
+func (r *MavlinkReader) requestDataStream(streamID, rateHz uint8) error {
+	const (
+		MAVLINK_MSG_ID_REQUEST_DATA_STREAM = 66
+		MAVLINK_SYSTEM_ID                  = 1
+		MAVLINK_COMPONENT_ID               = 1
+		TARGET_SYSTEM                      = 1
+		TARGET_COMPONENT                   = 1
+		START_STREAM                       = 1
+	)
+
+	payload := make([]byte, 6)
+	payload[0] = TARGET_SYSTEM
+	payload[1] = TARGET_COMPONENT
+	payload[2] = streamID
+	binary.LittleEndian.PutUint16(payload[3:], uint16(rateHz))
+	payload[5] = START_STREAM
+
+	msg, err := createMessage(MAVLINK_MSG_ID_REQUEST_DATA_STREAM, MAVLINK_SYSTEM_ID, MAVLINK_COMPONENT_ID, payload)
+	if err != nil {
+		return fmt.Errorf("error creating request data stream message: %v", err)
+	}
+
+	if r.useNetwork {
+		_, err = r.Conn.Write(msg)
+	} else {
+		_, err = r.serialPort.Write(msg)
+	}
+
+	if err != nil {
+		return fmt.Errorf("error sending request data stream message: %v", err)
+	}
+
+	fmt.Printf("Requested data stream (ID: %d) at %d Hz\n", streamID, rateHz)
+	return nil
+}
+
 // Close the connection
 func (r *MavlinkReader) Close() error {
 	if r.serialPort != nil {
@@ -90,6 +155,14 @@ func (r *MavlinkReader) Start() {
 	} else {
 		r.listenPort = fmt.Sprintf("%v", r.serialPort)
 	}
+
+	streamIDs := []uint8{0, 1, 2, 3, 4, 6, 10} // Add other stream IDs as needed
+	for _, streamID := range streamIDs {
+		err := r.requestDataStream(streamID, 5)
+		if err != nil {
+			fmt.Println("Error requesting data stream: ", err)
+		}
+	}
 	fmt.Printf("Starting MavlinkReader, listening on %v\n", r.listenPort)
 	go func() {
 		for {
@@ -103,6 +176,8 @@ func (r *MavlinkReader) Start() {
 				fmt.Println("Error parsing message:", err)
 				continue
 			}
+
+			fmt.Println("Message ID: ", m.MessageID)
 
 			if m.MessageID == 0 {
 				fmt.Println("Heartbeat received")

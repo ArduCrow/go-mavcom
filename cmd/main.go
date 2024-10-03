@@ -14,8 +14,8 @@ func init() {
 }
 
 func main() {
-	v, err := vehicle.NewVehicle("127.0.0.1:14552", 115200, useNetwork)
-	// v, err := vehicle.NewVehicle("/dev/ttyACM0", 115200, useNetwork)
+	// v, err := vehicle.NewVehicle("127.0.0.1:14552", 115200, useNetwork)
+	v, err := vehicle.NewVehicle("/dev/ttyACM0", 115200, useNetwork)
 	fmt.Printf("Vehicle: %v\n", v)
 	if err != nil {
 		fmt.Println("Error creating Vehicle: ", err)
