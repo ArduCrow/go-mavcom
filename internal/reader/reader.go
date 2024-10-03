@@ -50,6 +50,7 @@ func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReade
 
 func (r *MavlinkReader) readMessage() ([]byte, error) {
 	var source io.Reader
+	const minMsgLength = 8
 
 	if r.useNetwork {
 		source = r.Conn
@@ -59,6 +60,9 @@ func (r *MavlinkReader) readMessage() ([]byte, error) {
 
 	buf := make([]byte, 1024)
 	n, err := source.Read(buf)
+	if n < minMsgLength {
+		return nil, fmt.Errorf("message too short")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -91,17 +95,17 @@ func (r *MavlinkReader) Start() {
 			msg, err := r.readMessage()
 			if err != nil {
 				fmt.Println("Error reading message: ", err)
-				break
+				continue
 			}
 			m, err := mavlink.NewRawMessage(msg)
 			if err != nil {
 				fmt.Println("Error parsing message:", err)
+				continue
 			}
 
 			if m.MessageID == 0 {
 				fmt.Println("Heartbeat received")
 			}
-
 			// if the message ID is not 0, 33 or 74 then ignore it
 			if m.MessageID != 0 && m.MessageID != 33 && m.MessageID != 74 {
 				continue
@@ -109,6 +113,7 @@ func (r *MavlinkReader) Start() {
 			decodedMessage, err := mavlink.DecodeMessage(m)
 			if err != nil {
 				fmt.Println("Error decoding message: ", err)
+				continue
 			}
 			// fmt.Println(decodedMessage.GetMessageName())
 

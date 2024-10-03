@@ -56,7 +56,7 @@ func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 		fmt.Println("Error creating Vehicle: ", err)
 		return nil, err
 	}
-	defer r.Close()
+	// defer r.Close()
 	return &Vehicle{connection: r}, nil
 }
 
@@ -107,7 +107,7 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 
 	if v.connected && v.connection.CurrentStates.GlobalPositionIntState != nil {
 		v.updatePosition()
-		mavlink.SendMessage(msg, v.connection.Conn)
+		// mavlink.SendMessage(msg, v.connection.Conn)
 	}
 }
 
