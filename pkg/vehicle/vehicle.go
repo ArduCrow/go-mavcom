@@ -39,13 +39,22 @@ type Position struct {
 	Heading          float64
 }
 
+type FlightState struct {
+	Armed       bool
+	ClimbRate   float64
+	Airspeed    float64
+	Groundspeed float64
+	Throttle    float64
+}
+
 type Vehicle struct {
-	connected  bool
-	connection *reader.MavlinkReader
-	Airframe   Airframe
-	Battery    Battery
-	Position   Position
-	lock       sync.Mutex
+	connected   bool
+	connection  *reader.MavlinkReader
+	Airframe    Airframe
+	Battery     Battery
+	Position    Position
+	FlightState FlightState
+	lock        sync.Mutex
 }
 
 func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
@@ -94,12 +103,16 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 		switch msg.GetMessageID() {
 		case 0:
 			// Heartbeat
+			v.connection.CurrentStates.Heartbeat = msg.MessageData()
+			fmt.Println("HEARTBEAT SET: ", v.connection.CurrentStates.Heartbeat)
 		case 33:
 			// GlobalPositionInt
 			v.connection.CurrentStates.GlobalPositionIntState = msg.MessageData()
 		case 74:
 			// VFR_HUD
+			fmt.Println("VFR_HUD: ", msg.MessageData())
 			v.connection.CurrentStates.VFRHUDState = msg.MessageData()
+			fmt.Println("VFR_HUD: ", v.connection.CurrentStates.VFRHUDState)
 		default:
 			fmt.Println("Unknown message ID: ", msg.GetMessageID())
 		}
@@ -107,6 +120,9 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 
 	if v.connected && v.connection.CurrentStates.GlobalPositionIntState != nil {
 		v.updatePosition()
+		if v.connection.CurrentStates.VFRHUDState != nil && v.connection.CurrentStates.Heartbeat != nil {
+			v.updateFlightState()
+		}
 		// mavlink.SendMessage(msg, v.connection.Conn)
 	}
 }
@@ -129,6 +145,19 @@ func (v *Vehicle) updatePosition() {
 	}
 
 	fmt.Println("Position state update: ", v.Position)
+}
+
+func (v *Vehicle) updateFlightState() {
+	fmt.Printf("Flight state: %v\n", v.connection.CurrentStates.VFRHUDState)
+	fmt.Println("BaseMode: ", v.connection.CurrentStates.Heartbeat["BaseMode"])
+	v.FlightState = FlightState{
+		Armed:       v.connection.CurrentStates.Heartbeat["BaseMode"].(float64) >= 209,
+		ClimbRate:   v.connection.CurrentStates.VFRHUDState["Clb"].(float64),
+		Airspeed:    v.connection.CurrentStates.VFRHUDState["Airspeed"].(float64),
+		Groundspeed: v.connection.CurrentStates.VFRHUDState["Groundspeed"].(float64),
+		Throttle:    v.connection.CurrentStates.VFRHUDState["Throttle"].(float64),
+	}
+	fmt.Println("Flight state update: ", v.FlightState)
 }
 
 // func (v *Vehicle) updateBatteryState(voltage float64, current float64) {

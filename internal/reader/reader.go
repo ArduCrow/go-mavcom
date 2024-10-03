@@ -22,6 +22,7 @@ type MavlinkReader struct {
 type CurrentStates struct {
 	GlobalPositionIntState mavlink.DecodedPayload
 	VFRHUDState            mavlink.DecodedPayload
+	Heartbeat              mavlink.DecodedPayload
 }
 
 func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReader, error) {
