@@ -2,8 +2,8 @@ package reader
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"net"
 
@@ -12,13 +12,14 @@ import (
 	"github.com/tarm/serial"
 )
 
-type MavlinkReader struct {
+type MavlinkCommunicator struct {
 	serialPort    *serial.Port
 	listenPort    string
 	Conn          net.Conn
 	useNetwork    bool
 	msgChan       chan mavlink.DecodedMessage
 	CurrentStates CurrentStates
+	seqNumber     uint8
 }
 
 type CurrentStates struct {
@@ -27,7 +28,7 @@ type CurrentStates struct {
 	Heartbeat              mavlink.DecodedPayload
 }
 
-func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReader, error) {
+func NewMavlinkCommunicator(portName string, baud int, useNetwork bool) (*MavlinkCommunicator, error) {
 	var port *serial.Port
 	var conn net.Conn
 	var err error
@@ -48,17 +49,17 @@ func NewMavlinkReader(portName string, baud int, useNetwork bool) (*MavlinkReade
 		}
 	}
 
-	return &MavlinkReader{serialPort: port, Conn: conn, useNetwork: useNetwork, msgChan: make(chan mavlink.DecodedMessage)}, nil
+	return &MavlinkCommunicator{serialPort: port, Conn: conn, useNetwork: useNetwork, msgChan: make(chan mavlink.DecodedMessage)}, nil
 }
 
-func (r *MavlinkReader) readMessage() ([]byte, error) {
+func (mc *MavlinkCommunicator) readMessage() ([]byte, error) {
 	var source io.Reader
 	const minMsgLength = 8
 
-	if r.useNetwork {
-		source = r.Conn
+	if mc.useNetwork {
+		source = mc.Conn
 	} else {
-		source = r.serialPort
+		source = mc.serialPort
 	}
 
 	buf := make([]byte, 1024)
@@ -75,73 +76,10 @@ func (r *MavlinkReader) readMessage() ([]byte, error) {
 	return buf[:n], nil
 }
 
-func createMessage(messageID uint8, systemID uint8, componentID uint8, payload []byte) ([]byte, error) {
-	msgLength := len(payload)
-
-	// Create a buffer to store the message
-	msg := bytes.NewBuffer([]byte{})
-
-	// Write the MAVLink header (assuming MAVLink 1.0 for simplicity)
-	msg.WriteByte(0xFE)             // Start byte
-	msg.WriteByte(uint8(msgLength)) // Payload length
-	msg.WriteByte(0)                // Packet sequence (dummy value for now)
-	msg.WriteByte(systemID)         // System ID
-	msg.WriteByte(componentID)      // Component ID
-	msg.WriteByte(messageID)        // Message ID
-
-	// Write the payload
-	msg.Write(payload)
-
-	// Calculate and append the checksum (simple XOR for demonstration)
-	checksum := uint8(0)
-	for _, b := range msg.Bytes() {
-		checksum ^= b
-	}
-	msg.WriteByte(checksum)
-
-	return msg.Bytes(), nil
-}
-
-func (r *MavlinkReader) requestDataStream(streamID, rateHz uint8) error {
-	const (
-		MAVLINK_MSG_ID_REQUEST_DATA_STREAM = 66
-		MAVLINK_SYSTEM_ID                  = 1
-		MAVLINK_COMPONENT_ID               = 1
-		TARGET_SYSTEM                      = 1
-		TARGET_COMPONENT                   = 1
-		START_STREAM                       = 1
-	)
-
-	payload := make([]byte, 6)
-	payload[0] = TARGET_SYSTEM
-	payload[1] = TARGET_COMPONENT
-	payload[2] = streamID
-	binary.LittleEndian.PutUint16(payload[3:], uint16(rateHz))
-	payload[5] = START_STREAM
-
-	msg, err := createMessage(MAVLINK_MSG_ID_REQUEST_DATA_STREAM, MAVLINK_SYSTEM_ID, MAVLINK_COMPONENT_ID, payload)
-	if err != nil {
-		return fmt.Errorf("error creating request data stream message: %v", err)
-	}
-
-	if r.useNetwork {
-		_, err = r.Conn.Write(msg)
-	} else {
-		_, err = r.serialPort.Write(msg)
-	}
-
-	if err != nil {
-		return fmt.Errorf("error sending request data stream message: %v", err)
-	}
-
-	fmt.Printf("Requested data stream (ID: %d) at %d Hz\n", streamID, rateHz)
-	return nil
-}
-
 // Close the connection
-func (r *MavlinkReader) Close() error {
-	if r.serialPort != nil {
-		return r.serialPort.Close()
+func (mc *MavlinkCommunicator) Close() error {
+	if mc.serialPort != nil {
+		return mc.serialPort.Close()
 	}
 	return nil
 }
@@ -149,24 +87,24 @@ func (r *MavlinkReader) Close() error {
 // Begin reading messages. Spawns its own goroutine so that the
 // main loop can continue to run (the Read method in the readMessage
 // function is blocking)
-func (r *MavlinkReader) Start() {
-	if r.useNetwork {
-		r.listenPort = r.Conn.LocalAddr().String()
+func (mc *MavlinkCommunicator) Start() {
+	if mc.useNetwork {
+		mc.listenPort = mc.Conn.LocalAddr().String()
 	} else {
-		r.listenPort = fmt.Sprintf("%v", r.serialPort)
+		mc.listenPort = fmt.Sprintf("%v", mc.serialPort)
 	}
 
-	streamIDs := []uint8{0, 1, 2, 3, 4, 6, 10} // Add other stream IDs as needed
-	for _, streamID := range streamIDs {
-		err := r.requestDataStream(streamID, 5)
-		if err != nil {
-			fmt.Println("Error requesting data stream: ", err)
-		}
-	}
-	fmt.Printf("Starting MavlinkReader, listening on %v\n", r.listenPort)
+	// streamIDs := []uint8{0, 1, 2, 3, 4, 6, 10} // Add other stream IDs as needed
+	// for _, streamID := range streamIDs {
+	// 	err := mc.requestDataStream(streamID, 5)
+	// 	if err != nil {
+	// 		fmt.Println("Error requesting data stream: ", err)
+	// 	}
+	// }
+	fmt.Printf("Starting MavlinkCommunicator, listening on %v\n", mc.listenPort)
 	go func() {
 		for {
-			msg, err := r.readMessage()
+			msg, err := mc.readMessage()
 			if err != nil {
 				fmt.Println("Error reading message: ", err)
 				continue
@@ -177,7 +115,7 @@ func (r *MavlinkReader) Start() {
 				continue
 			}
 
-			fmt.Println("Message ID: ", m.MessageID)
+			// fmt.Println("Message ID: ", m.MessageID)
 
 			if m.MessageID == 0 {
 				fmt.Println("Heartbeat received")
@@ -193,14 +131,95 @@ func (r *MavlinkReader) Start() {
 			}
 			// fmt.Println(decodedMessage.GetMessageName())
 
-			r.msgChan <- decodedMessage
+			mc.msgChan <- decodedMessage
 
 		}
 	}()
 
 }
 
+func (mc *MavlinkCommunicator) SendMessage(message []byte) error {
+	fmt.Println("Sending message")
+
+	if mc.useNetwork {
+		_, err := mc.Conn.Write(message)
+		fmt.Println("Message sending network")
+		if err != nil {
+			return fmt.Errorf("error sending network message: %v", err)
+		} else {
+			fmt.Println("Message sent network")
+		}
+	} else {
+		_, err := mc.serialPort.Write(message)
+		fmt.Println("Message sending serial")
+		if err != nil {
+			return fmt.Errorf("error sending message: %v", err)
+		} else {
+			fmt.Println("Message sent serial")
+		}
+	}
+	fmt.Println("Message sent:", message)
+	return nil
+}
+
+func (mc *MavlinkCommunicator) createMessage(mavlinkVersion int, messageID uint32, systemID uint8, componentID uint8, payload []byte) ([]byte, error) {
+	msgLength := len(payload)
+	msg := bytes.NewBuffer([]byte{})
+
+	// MAVLink 2.0 Header
+	if mavlinkVersion == 2 {
+		msg.WriteByte(0xFD)             // Start byte for MAVLink 2.0
+		msg.WriteByte(uint8(msgLength)) // Payload length
+		msg.WriteByte(0x00)             // Incompatibility flags
+		msg.WriteByte(0x00)             // Compatibility flags
+		msg.WriteByte(mc.seqNumber)     // Sequence number (increment with each message)
+		mc.seqNumber++                  // Increment sequence number for next message
+		msg.WriteByte(systemID)         // System ID
+		msg.WriteByte(componentID)      // Component ID
+
+		// Write the 3-byte message ID
+		msg.WriteByte(uint8(messageID & 0xFF))         // Least significant byte
+		msg.WriteByte(uint8((messageID >> 8) & 0xFF))  // Middle byte
+		msg.WriteByte(uint8((messageID >> 16) & 0xFF)) // Most significant byte
+	} else {
+		// MAVLink 1.0 Header (if required in the future)
+		msg.WriteByte(0xFE)             // Start byte for MAVLink 1.0
+		msg.WriteByte(uint8(msgLength)) // Payload length
+		msg.WriteByte(mc.seqNumber)     // Sequence number
+		mc.seqNumber++                  // Increment sequence number
+		msg.WriteByte(systemID)         // System ID
+		msg.WriteByte(componentID)      // Component ID
+		msg.WriteByte(uint8(messageID)) // Message ID (1 byte in MAVLink 1.0)
+	}
+
+	// Write the payload
+	msg.Write(payload)
+
+	// Calculate checksum (with extra CRC)
+	checksum := mc.calculateChecksum(messageID, payload)
+	msg.Write(checksum)
+
+	return msg.Bytes(), nil
+}
+
+func (mc *MavlinkCommunicator) calculateChecksum(messageID uint32, payload []byte) []byte {
+	crc := crc32.NewIEEE() // Use CRC-16-X25 for MAVLink messages
+
+	// Write payload to the CRC calculator
+	crc.Write(payload)
+
+	// Add message ID and extra CRC
+	crc.Write([]byte{uint8(messageID & 0xFF)})         // Least significant byte of message ID
+	crc.Write([]byte{uint8((messageID >> 8) & 0xFF)})  // Middle byte
+	crc.Write([]byte{uint8((messageID >> 16) & 0xFF)}) // Most significant byte
+	crc.Write([]byte{EXTRA_CRC_STATUSTEXT})            // The extra CRC byte specific to the STATUSTEXT message
+
+	// Finalize the CRC-16 calculation
+	checksum := crc.Sum(nil)
+	return checksum[:2] // Only return the first 2 bytes of the checksum
+}
+
 // This function should return a channel that will be used to send messages
-func (r *MavlinkReader) Messages() <-chan mavlink.DecodedMessage {
-	return r.msgChan
+func (mc *MavlinkCommunicator) Messages() <-chan mavlink.DecodedMessage {
+	return mc.msgChan
 }

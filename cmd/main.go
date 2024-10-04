@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"gomavlink/pkg/vehicle"
+	"time"
 )
 
 var useNetwork bool
@@ -22,6 +23,11 @@ func main() {
 		return
 	}
 	v.Start()
+
+	// sleep 4 seconds
+	time.Sleep(3 * time.Second)
+	// v.Connection.ArmMotors()
+	v.Connection.SendStatusText(6, "AUTOPILOT CONNECTED")
 
 	// Since both the reader and the vehicle are running in their own goroutines,
 	// we use the select statement to keep the main goroutine running,

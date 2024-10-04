@@ -49,7 +49,7 @@ type FlightState struct {
 
 type Vehicle struct {
 	connected   bool
-	connection  *reader.MavlinkReader
+	Connection  *reader.MavlinkCommunicator
 	Airframe    Airframe
 	Battery     Battery
 	Position    Position
@@ -60,13 +60,13 @@ type Vehicle struct {
 func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 	// TODO - Implement the vehicle's main loop
 	fmt.Println("New vehicle")
-	r, err := reader.NewMavlinkReader(port, baud, network)
+	mc, err := reader.NewMavlinkCommunicator(port, baud, network)
 	if err != nil {
 		fmt.Println("Error creating Vehicle: ", err)
 		return nil, err
 	}
 	// defer r.Close()
-	return &Vehicle{connection: r}, nil
+	return &Vehicle{Connection: mc}, nil
 }
 
 // Begins the vehicles main loop
@@ -77,11 +77,11 @@ func (v *Vehicle) Start() {
 	fmt.Println("Starting Vehicle...")
 
 	go func() {
-		for msg := range v.connection.Messages() {
+		for msg := range v.Connection.Messages() {
 			v.updateStates(msg)
 		}
 	}()
-	v.connection.Start()
+	v.Connection.Start()
 
 	// select {}
 
@@ -103,27 +103,27 @@ func (v *Vehicle) updateStates(msg mavlink.DecodedMessage) {
 		switch msg.GetMessageID() {
 		case 0:
 			// Heartbeat
-			v.connection.CurrentStates.Heartbeat = msg.MessageData()
-			fmt.Println("HEARTBEAT SET: ", v.connection.CurrentStates.Heartbeat)
+			v.Connection.CurrentStates.Heartbeat = msg.MessageData()
+			// fmt.Println("HEARTBEAT SET: ", v.Connection.CurrentStates.Heartbeat)
 		case 33:
 			// GlobalPositionInt
-			v.connection.CurrentStates.GlobalPositionIntState = msg.MessageData()
+			v.Connection.CurrentStates.GlobalPositionIntState = msg.MessageData()
 		case 74:
 			// VFR_HUD
-			fmt.Println("VFR_HUD: ", msg.MessageData())
-			v.connection.CurrentStates.VFRHUDState = msg.MessageData()
-			fmt.Println("VFR_HUD: ", v.connection.CurrentStates.VFRHUDState)
+			// fmt.Println("VFR_HUD: ", msg.MessageData())
+			v.Connection.CurrentStates.VFRHUDState = msg.MessageData()
+			// fmt.Println("VFR_HUD: ", v.Connection.CurrentStates.VFRHUDState)
 		default:
 			fmt.Println("Unknown message ID: ", msg.GetMessageID())
 		}
 	}
 
-	if v.connected && v.connection.CurrentStates.GlobalPositionIntState != nil {
+	if v.connected && v.Connection.CurrentStates.GlobalPositionIntState != nil {
 		v.updatePosition()
-		if v.connection.CurrentStates.VFRHUDState != nil && v.connection.CurrentStates.Heartbeat != nil {
+		if v.Connection.CurrentStates.VFRHUDState != nil && v.Connection.CurrentStates.Heartbeat != nil {
 			v.updateFlightState()
 		}
-		// mavlink.SendMessage(msg, v.connection.Conn)
+		// mavlink.SendMessage(msg, v.Connection.Conn)
 	}
 }
 
@@ -137,27 +137,27 @@ func (v *Vehicle) processInitialHeartbeat(msg mavlink.DecodedMessage) {
 
 func (v *Vehicle) updatePosition() {
 	v.Position = Position{
-		Latitude:         v.connection.CurrentStates.GlobalPositionIntState["Lat"].(float64),
-		Longitude:        v.connection.CurrentStates.GlobalPositionIntState["Lon"].(float64),
-		AltitudeRelative: v.connection.CurrentStates.GlobalPositionIntState["RelativeAlt"].(float64),
-		AltitudeAMSL:     v.connection.CurrentStates.GlobalPositionIntState["Alt"].(float64),
-		Heading:          v.connection.CurrentStates.GlobalPositionIntState["Hdg"].(float64),
+		Latitude:         v.Connection.CurrentStates.GlobalPositionIntState["Lat"].(float64),
+		Longitude:        v.Connection.CurrentStates.GlobalPositionIntState["Lon"].(float64),
+		AltitudeRelative: v.Connection.CurrentStates.GlobalPositionIntState["RelativeAlt"].(float64),
+		AltitudeAMSL:     v.Connection.CurrentStates.GlobalPositionIntState["Alt"].(float64),
+		Heading:          v.Connection.CurrentStates.GlobalPositionIntState["Hdg"].(float64),
 	}
 
-	fmt.Println("Position state update: ", v.Position)
+	// fmt.Println("Position state update: ", v.Position)
 }
 
 func (v *Vehicle) updateFlightState() {
-	fmt.Printf("Flight state: %v\n", v.connection.CurrentStates.VFRHUDState)
-	fmt.Println("BaseMode: ", v.connection.CurrentStates.Heartbeat["BaseMode"])
+	// fmt.Printf("Flight state: %v\n", v.Connection.CurrentStates.VFRHUDState)
+	// fmt.Println("BaseMode: ", v.Connection.CurrentStates.Heartbeat["BaseMode"])
 	v.FlightState = FlightState{
-		Armed:       v.connection.CurrentStates.Heartbeat["BaseMode"].(float64) >= 209,
-		ClimbRate:   v.connection.CurrentStates.VFRHUDState["Clb"].(float64),
-		Airspeed:    v.connection.CurrentStates.VFRHUDState["Airspeed"].(float64),
-		Groundspeed: v.connection.CurrentStates.VFRHUDState["Groundspeed"].(float64),
-		Throttle:    v.connection.CurrentStates.VFRHUDState["Throttle"].(float64),
+		Armed:       v.Connection.CurrentStates.Heartbeat["BaseMode"].(float64) >= 209,
+		ClimbRate:   v.Connection.CurrentStates.VFRHUDState["Clb"].(float64),
+		Airspeed:    v.Connection.CurrentStates.VFRHUDState["Airspeed"].(float64),
+		Groundspeed: v.Connection.CurrentStates.VFRHUDState["Groundspeed"].(float64),
+		Throttle:    v.Connection.CurrentStates.VFRHUDState["Throttle"].(float64),
 	}
-	fmt.Println("Flight state update: ", v.FlightState)
+	// fmt.Println("Flight state update: ", v.FlightState)
 }
 
 // func (v *Vehicle) updateBatteryState(voltage float64, current float64) {

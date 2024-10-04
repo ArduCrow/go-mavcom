@@ -67,6 +67,7 @@ func decodeHeartbeat(data *RawMessage) (*HeartbeatMessage, error) {
 	if len(payload) != 9 {
 		return nil, fmt.Errorf("invalid payload length for HEARTBEAT message")
 	}
+	// fmt.Printf("sys id: %v, comp id: %v, sequence %v\n", data.SystemID, data.SystemID, data.Sequence)
 	newMessage := &HeartbeatMessage{
 		MavlinkMessage: MavlinkMessage{
 			MessageID:   data.MessageID,
