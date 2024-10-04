@@ -42,24 +42,42 @@ func (mc *MavlinkCommunicator) requestDataStream(streamID, rateHz uint8) error {
 
 func (mc *MavlinkCommunicator) ArmMotors() error {
 	fmt.Println("Arming motors")
-	payload := make([]byte, 33)
-	binary.LittleEndian.PutUint16(payload[0:2], MAV_CMD_COMPONENT_ARM_DISARM) // Command
-	payload[3] = 1                                                            // Confirmation
-	payload[4] = 1                                                            // Param1 (1 to arm)
-	binary.LittleEndian.PutUint32(payload[7:], 1)                             // Param2 (1 to force arm)
-	// Other params are zero by default
 
-	msg, err := mc.createMessage(1, MAVLINK_MSG_ID_COMMAND_LONG, MAVLINK_SYSTEM_ID, MAVLINK_COMPONENT_ID, payload)
+	payload := make([]byte, 33)
+
+	// Command ID: MAV_CMD_COMPONENT_ARM_DISARM (400)
+	binary.LittleEndian.PutUint16(payload[0:2], MAV_CMD_COMPONENT_ARM_DISARM)
+
+	// Target system and component (drone's system ID and component ID)
+	payload[2] = 1 // Target system (drone)
+	payload[3] = 1 // Target component (drone)
+
+	// Confirmation (0)
+	payload[4] = 0
+
+	// Param1: 1 to arm
+	binary.LittleEndian.PutUint32(payload[5:], 1)
+
+	// Param2: 0 (force arm is optional)
+	binary.LittleEndian.PutUint32(payload[9:], 0)
+
+	// Param3 to Param7: all 0s (not used)
+
+	// Send the message
+	msg, err := mc.createMessage(2, MAVLINK_MSG_ID_COMMAND_LONG, 255, 1, payload)
 	if err != nil {
 		return fmt.Errorf("error creating arm motors message: %v", err)
 	}
+
+	fmt.Println("Sending Arm Motors message:", msg)
+
 	err = mc.SendMessage(msg)
 	if err != nil {
 		return fmt.Errorf("error sending arm motors message: %v", err)
 	}
+
 	return nil
 }
-
 func (mc *MavlinkCommunicator) SendStatusText(severity uint8, text string) error {
 	fmt.Println("Sending status text")
 	payload := make([]byte, 51)
@@ -72,7 +90,7 @@ func (mc *MavlinkCommunicator) SendStatusText(severity uint8, text string) error
 	}
 
 	// Create the MAVLink 2.0 message
-	msg, err := mc.createMessage(2, MAVLINK_MSG_ID_STATUSTEXT, MAVLINK_SYSTEM_ID, 1, payload)
+	msg, err := mc.createMessage(2, MAVLINK_MSG_ID_STATUSTEXT, MAVLINK_SYSTEM_ID, MAVLINK_COMPONENT_ID, payload)
 	if err != nil {
 		return fmt.Errorf("error creating status text message: %v", err)
 	}

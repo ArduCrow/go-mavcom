@@ -57,6 +57,9 @@ func DecodeMessage(data *RawMessage) (DecodedMessage, error) {
 		return decodeGlobalPositionInt(data)
 	case 74:
 		return decodeVfrHud(data)
+	case 77:
+		fmt.Println("COMMAND ACK RECEIVED!")
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("unknown message ID: %d", data.MessageID)
 	}

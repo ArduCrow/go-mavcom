@@ -26,8 +26,11 @@ func main() {
 
 	// sleep 4 seconds
 	time.Sleep(3 * time.Second)
-	// v.Connection.ArmMotors()
-	v.Connection.SendStatusText(6, "AUTOPILOT CONNECTED")
+	v.Connection.ArmMotors()
+	// for i := 0; i < 100; i++ {
+	// 	v.Connection.SendStatusText(6, "AUTOPILOT CONNECTED")
+	// 	time.Sleep(1 * time.Second)
+	// }
 
 	// Since both the reader and the vehicle are running in their own goroutines,
 	// we use the select statement to keep the main goroutine running,
