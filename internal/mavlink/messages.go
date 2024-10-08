@@ -9,6 +9,8 @@ const (
 
 	// Command IDs
 	MAV_CMD_COMPONENT_ARM_DISARM = 400
+	MAV_CMD_NAV_TAKEOFF          = 22
+	MAV_CMD_SET_MESSAGE_INTERVAL = 511
 )
 
 type MavlinkMessage interface {

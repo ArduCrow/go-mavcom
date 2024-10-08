@@ -59,7 +59,7 @@ func DecodeMessage(data *RawMessage) (DecodedMessage, error) {
 		return decodeVfrHud(data)
 	case 77:
 		fmt.Println("COMMAND ACK RECEIVED!")
-		return nil, nil
+		return decodeCommandAck(data)
 	default:
 		return nil, fmt.Errorf("unknown message ID: %d", data.MessageID)
 	}
@@ -107,6 +107,43 @@ func (h *HeartbeatMessage) MessageData() DecodedPayload {
 		"Autopilot":    h.Autopilot,
 		"BaseMode":     h.BaseMode,
 		"SystemStatus": h.SystemStatus,
+	}
+}
+
+func decodeCommandAck(data *RawMessage) (*CommandAckMessage, error) {
+	payload := data.Payload
+	if len(payload) != 3 {
+		return nil, fmt.Errorf("invalid payload length for COMMAND_ACK message")
+	}
+	newMessage := &CommandAckMessage{
+		DecodedMavlinkMessage: DecodedMavlinkMessage{
+			MessageID:   data.MessageID,
+			MessageName: "COMMAND_ACK",
+		},
+		Command: binary.LittleEndian.Uint16(payload[1:3]),
+		Result:  payload[3],
+	}
+	return newMessage, nil
+}
+
+type CommandAckMessage struct {
+	DecodedMavlinkMessage
+	Command uint16
+	Result  uint8
+}
+
+func (c *CommandAckMessage) GetMessageID() int {
+	return c.MessageID
+}
+
+func (c *CommandAckMessage) GetMessageName() string {
+	return c.MessageName
+}
+
+func (c *CommandAckMessage) MessageData() DecodedPayload {
+	return DecodedPayload{
+		"Command": c.Command,
+		"Result":  c.Result,
 	}
 }
 

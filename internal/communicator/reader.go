@@ -166,7 +166,7 @@ func (mc *MavlinkCommunicator) Start() {
 
 }
 
-func (mc *MavlinkCommunicator) SendMessage() {
+func (mc *MavlinkCommunicator) SendArm() {
 	msg := mavlink.CommandLong{
 		Param1:          1,
 		Param2:          0,
@@ -181,11 +181,78 @@ func (mc *MavlinkCommunicator) SendMessage() {
 		Confirmation:    0,
 	}
 	fmt.Println("Connection: ", mc.Conn.LocalAddr())
-	err := mc.Encoder.EncodePacket(mc.Conn, 1, 200, msg)
+	err := mc.Encoder.EncodePacket(mc.Conn, 1, 0, msg)
 	if err != nil {
 		fmt.Println("Error sending message: ", err)
 	}
 
+}
+
+func (mc *MavlinkCommunicator) SendTakeoff(alt float32) {
+	msg := mavlink.CommandLong{
+		Param1:          0,
+		Param2:          0,
+		Param3:          0,
+		Param4:          0,
+		Param5:          0,
+		Param6:          0,
+		Param7:          alt,
+		Command:         mavlink.MAV_CMD_NAV_TAKEOFF,
+		TargetSystem:    1,
+		TargetComponent: 1,
+		Confirmation:    0,
+	}
+	err := mc.Encoder.EncodePacket(mc.Conn, 1, 0, msg)
+	if err != nil {
+		fmt.Println("Error sending message: ", err)
+	}
+}
+
+func (mc *MavlinkCommunicator) SendSetModeGuidedArmed() {
+	const MAV_MODE_FLAG_CUSTOM_MODE_ENABLED = 1 << 7
+	const MAV_MODE_FLAG_SAFETY_ARMED = 1 << 6
+	const GUIDED_MODE = 4
+
+	baseMode := MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | MAV_MODE_FLAG_SAFETY_ARMED
+
+	msg := mavlink.CommandLong{
+		Param1:          float32(baseMode),
+		Param2:          GUIDED_MODE,
+		Param3:          0,
+		Param4:          0,
+		Param5:          0,
+		Param6:          0,
+		Param7:          0,
+		Command:         176, // MAV_CMD_DO_SET_MODE
+		TargetSystem:    1,
+		TargetComponent: 0,
+		Confirmation:    0,
+	}
+	fmt.Printf("Sending GUIDED mode command with baseMode: %d, customMode: %d\n", baseMode, GUIDED_MODE)
+	err := mc.Encoder.EncodePacket(mc.Conn, 1, 0, msg)
+	if err != nil {
+		fmt.Println("Error sending message: ", err)
+	}
+}
+
+func (mc *MavlinkCommunicator) RequestDataStream(streamID uint8, rate uint16) {
+	msg := mavlink.CommandLong{
+		Param1:          float32(streamID),
+		Param2:          float32(rate),
+		Param3:          0,
+		Param4:          0,
+		Param5:          0,
+		Param6:          0,
+		Param7:          0,
+		Command:         mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+		TargetSystem:    1,
+		TargetComponent: 1,
+		Confirmation:    0,
+	}
+	err := mc.Encoder.EncodePacket(mc.Conn, 1, 0, msg)
+	if err != nil {
+		fmt.Println("Error sending message: ", err)
+	}
 }
 
 func (mc *MavlinkCommunicator) Messages() <-chan mavlink.DecodedMessage {
