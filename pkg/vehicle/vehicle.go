@@ -2,8 +2,8 @@ package vehicle
 
 import (
 	"fmt"
+	"gomavlink/internal/communicator"
 	"gomavlink/internal/mavlink"
-	"gomavlink/internal/reader"
 	"sync"
 )
 
@@ -49,7 +49,7 @@ type FlightState struct {
 
 type Vehicle struct {
 	connected   bool
-	Connection  *reader.MavlinkCommunicator
+	Connection  *communicator.MavlinkCommunicator
 	Airframe    Airframe
 	Battery     Battery
 	Position    Position
@@ -60,7 +60,7 @@ type Vehicle struct {
 func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 	// TODO - Implement the vehicle's main loop
 	fmt.Println("New vehicle")
-	mc, err := reader.NewMavlinkCommunicator(port, baud, network)
+	mc, err := communicator.NewMavlinkCommunicator(port, baud, network)
 	if err != nil {
 		fmt.Println("Error creating Vehicle: ", err)
 		return nil, err

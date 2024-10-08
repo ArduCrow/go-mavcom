@@ -1,4 +1,4 @@
-package reader
+package communicator
 
 import (
 	"encoding/binary"
@@ -18,7 +18,7 @@ const (
 	START_STREAM                       = 1
 )
 
-func (mc *MavlinkCommunicator) requestDataStream(streamID, rateHz uint8) error {
+func (mc *MavlinkCommunicator) RequestDataStream(streamID, rateHz uint8) error {
 	payload := make([]byte, 6)
 	payload[0] = TARGET_SYSTEM
 	payload[1] = TARGET_COMPONENT
