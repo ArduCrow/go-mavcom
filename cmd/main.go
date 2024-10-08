@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"gomavlink/pkg/vehicle"
-	"time"
 )
 
 var useNetwork bool
@@ -15,7 +14,7 @@ func init() {
 }
 
 func main() {
-	v, err := vehicle.NewVehicle("127.0.0.1:14550", 115200, useNetwork)
+	v, err := vehicle.NewVehicle("localhost:5762", 115200, useNetwork)
 	// v, err := vehicle.NewVehicle("/dev/ttyACM0", 115200, useNetwork)
 	fmt.Printf("Vehicle: %v\n", v)
 	if err != nil {
@@ -24,27 +23,7 @@ func main() {
 	}
 	v.Start()
 
-	// sleep 4 seconds
-	time.Sleep(1 * time.Second)
-	err = v.Connection.ArmMotors()
-	if err != nil {
-		fmt.Println("Error arming motors: ", err)
-	}
-	time.Sleep(6 * time.Second)
-	err = v.Connection.ArmMotors()
-	if err != nil {
-		fmt.Println("Error arming motors: ", err)
-	}
-	time.Sleep(6 * time.Second)
-	err = v.Connection.ArmMotors()
-	if err != nil {
-		fmt.Println("Error arming motors: ", err)
-	}
-	time.Sleep(6 * time.Second)
-	err = v.Connection.ArmMotors()
-	if err != nil {
-		fmt.Println("Error arming motors: ", err)
-	}
+	v.Connection.SendMessage()
 	// v.Connection.SendCommandLong()
 	// for i := 0; i < 100; i++ {
 	// 	v.Connection.SendStatusText(6, "AUTOPILOT CONNECTED")

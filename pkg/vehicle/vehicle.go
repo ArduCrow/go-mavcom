@@ -65,8 +65,8 @@ func NewVehicle(port string, baud int, network bool) (*Vehicle, error) {
 		fmt.Println("Error creating Vehicle: ", err)
 		return nil, err
 	}
-	// defer r.Close()
-	return &Vehicle{Connection: mc}, nil
+	vehicle := &Vehicle{Connection: mc}
+	return vehicle, nil
 }
 
 // Begins the vehicles main loop
@@ -86,7 +86,6 @@ func (v *Vehicle) Start() {
 	// select {}
 
 }
-
 func (v *Vehicle) Travel(lat float64, lon float64, alt int) {
 	fmt.Printf("PLACEHOLDER. Vehicle travel to to %v, %v\n", lat, lon)
 }

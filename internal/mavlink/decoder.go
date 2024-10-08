@@ -22,7 +22,7 @@ type RawMessage struct {
 	CRC         uint8
 }
 
-type MavlinkMessage struct {
+type DecodedMavlinkMessage struct {
 	MessageID   int
 	MessageName string
 	Payload     DecodedPayload
@@ -72,7 +72,7 @@ func decodeHeartbeat(data *RawMessage) (*HeartbeatMessage, error) {
 	}
 	// fmt.Printf("sys id: %v, comp id: %v, sequence %v\n", data.SystemID, data.SystemID, data.Sequence)
 	newMessage := &HeartbeatMessage{
-		MavlinkMessage: MavlinkMessage{
+		DecodedMavlinkMessage: DecodedMavlinkMessage{
 			MessageID:   data.MessageID,
 			MessageName: "HEARTBEAT",
 		},
@@ -85,7 +85,7 @@ func decodeHeartbeat(data *RawMessage) (*HeartbeatMessage, error) {
 }
 
 type HeartbeatMessage struct {
-	MavlinkMessage
+	DecodedMavlinkMessage
 	Type         float64
 	Autopilot    float64
 	BaseMode     float64

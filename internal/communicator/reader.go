@@ -17,7 +17,9 @@ type MavlinkCommunicator struct {
 	useNetwork    bool
 	msgChan       chan mavlink.DecodedMessage
 	CurrentStates CurrentStates
-	seqNumber     uint8
+	SeqNumber     uint8
+	Encoder       *mavlink.Encoder
+	// readWriteLock sync.Mutex
 }
 
 type CurrentStates struct {
@@ -32,11 +34,12 @@ func NewMavlinkCommunicator(portName string, baud int, useNetwork bool) (*Mavlin
 	var err error
 
 	if useNetwork {
-		udpAddr, err := net.ResolveUDPAddr("udp", portName)
+		// udpAddr, err := net.ResolveUDPAddr("udp", portName)
+		conn, err = net.Dial("tcp", portName)
 		if err != nil {
 			return nil, err
 		}
-		conn, err = net.ListenUDP("udp", udpAddr)
+		// conn, err = net.ListenUDP("udp", udpAddr)
 		if err != nil {
 			return nil, err
 		}
@@ -46,8 +49,33 @@ func NewMavlinkCommunicator(portName string, baud int, useNetwork bool) (*Mavlin
 			return nil, err
 		}
 	}
+	NewMavlinkCommunicator := &MavlinkCommunicator{
+		serialPort: port,
+		Conn:       conn,
+		useNetwork: useNetwork,
+		msgChan:    make(chan mavlink.DecodedMessage),
+		SeqNumber:  uint8(0),
+	}
 
-	return &MavlinkCommunicator{serialPort: port, Conn: conn, useNetwork: useNetwork, msgChan: make(chan mavlink.DecodedMessage), seqNumber: 1}, nil
+	encoder := mavlink.NewEncoder()
+	NewMavlinkCommunicator.Encoder = encoder
+	encoder.MavComInterface = NewMavlinkCommunicator
+
+	return NewMavlinkCommunicator, nil
+}
+
+func (mc *MavlinkCommunicator) GetSequenceNumber() uint8 {
+	return mc.SeqNumber
+}
+
+func (mc *MavlinkCommunicator) IncrementSequenceNumber() {
+	seqNumber := mc.SeqNumber
+	if seqNumber == 0xFF {
+		mc.SeqNumber = 0
+		fmt.Println("Sequence number reset")
+	} else {
+		mc.SeqNumber++
+	}
 }
 
 func (mc *MavlinkCommunicator) readMessage() ([]byte, error) {
@@ -103,6 +131,8 @@ func (mc *MavlinkCommunicator) Start() {
 	go func() {
 		for {
 			msg, err := mc.readMessage()
+			// v := mc.Encoder.GetSequenceNumber()
+			// fmt.Println("Sequence number in read loop: ", v)
 			if err != nil {
 				fmt.Println("Error reading message: ", err)
 				continue
@@ -134,4 +164,30 @@ func (mc *MavlinkCommunicator) Start() {
 		}
 	}()
 
+}
+
+func (mc *MavlinkCommunicator) SendMessage() {
+	msg := mavlink.CommandLong{
+		Param1:          1,
+		Param2:          0,
+		Param3:          0,
+		Param4:          0,
+		Param5:          0,
+		Param6:          0,
+		Param7:          0,
+		Command:         400,
+		TargetSystem:    1,
+		TargetComponent: 1,
+		Confirmation:    0,
+	}
+	fmt.Println("Connection: ", mc.Conn.LocalAddr())
+	err := mc.Encoder.EncodePacket(mc.Conn, 1, 200, msg)
+	if err != nil {
+		fmt.Println("Error sending message: ", err)
+	}
+
+}
+
+func (mc *MavlinkCommunicator) Messages() <-chan mavlink.DecodedMessage {
+	return mc.msgChan
 }
