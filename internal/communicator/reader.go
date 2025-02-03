@@ -5,7 +5,7 @@ import (
 	"io"
 	"net"
 
-	"gomavlink/internal/mavlink"
+	"github.com/arducrow/go-mavcom/internal/mavlink"
 
 	"github.com/tarm/serial"
 )

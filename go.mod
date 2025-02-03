@@ -1,4 +1,4 @@
-module gomavlink
+module github.com/arducrow/go-mavcom
 
 go 1.21
 

@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"gomavlink/pkg/vehicle"
 	"time"
+
+	"github.com/arducrow/go-mavcom/pkg/vehicle"
 )
 
 var useNetwork bool

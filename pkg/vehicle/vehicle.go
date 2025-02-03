@@ -2,9 +2,10 @@ package vehicle
 
 import (
 	"fmt"
-	"gomavlink/internal/communicator"
-	"gomavlink/internal/mavlink"
 	"sync"
+
+	"github.com/arducrow/go-mavcom/internal/communicator"
+	"github.com/arducrow/go-mavcom/internal/mavlink"
 )
 
 type Airframe int
